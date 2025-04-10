@@ -21,3 +21,9 @@ class MatchResult(BaseModel):
     full_name: str
     bio: Optional[str]
     matched_skills: int
+
+class RatingCreate(BaseModel):
+    from_user: str   
+    to_user: str
+    stars: int
+    feedback: Optional[str] = None

@@ -18,18 +18,18 @@ async def get_skills():
 @router.post("/skills")
 async def add_skill(skill: SkillCreate):
     async with supabase_client() as client:
-        res = await client.post("/skills?on_conflict=name", json=skill.dict())
-
+        res = await client.post(
+            "/skills?on_conflict=name",
+            json=skill.dict(),
+            headers={"Prefer": "resolution=merge-duplicates"}
+        )
         if res.status_code not in (200, 201):
             raise HTTPException(status_code=400, detail=res.text)
-
         try:
             return res.json()
         except Exception:
-            return JSONResponse(
-                content={"message": "Skill inserted/updated, but no response body"},
-                status_code=res.status_code
-            )
+            return {"message": "Skill added or already exists"}
+
 
 @router.options("/skills", include_in_schema=False)
 async def options_skills(request: Request):

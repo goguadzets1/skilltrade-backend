@@ -20,10 +20,15 @@ async def get_profile(user_id: str):
 @router.put("/profile")
 async def update_profile(payload: ProfileUpdate):
     async with supabase_client() as client:
-        res = await client.post("/profiles?on_conflict=id", json=payload.dict())
+        res = await client.post(
+            "/profiles?on_conflict=id",
+            json=payload.dict(),
+            headers={"Prefer": "resolution=merge-duplicates"}
+        )
         if res.status_code not in (200, 201):
             raise HTTPException(status_code=400, detail=res.text)
         return {"message": "Profile upserted"}
+
 
 
 @router.options("/profile", include_in_schema=False)

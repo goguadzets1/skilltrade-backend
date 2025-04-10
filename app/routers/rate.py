@@ -3,16 +3,22 @@ from fastapi.responses import JSONResponse
 from fastapi import Request
 from app.core.supabase import supabase_client
 from app.models.models import Rating
+from app.models.models import RatingCreate
 
 router = APIRouter()
 
-@router.post("/rate")
-async def rate_user(payload: Rating):
+@router.post("/rating")
+async def submit_rating(payload: RatingCreate):
     async with supabase_client() as client:
-        res = await client.post("/ratings", json=payload.dict())
-        if res.status_code != 201:
+        res = await client.post(
+            "/ratings?on_conflict=from_user,to_user",
+            json=payload.dict(),
+            headers={"Prefer": "resolution=merge-duplicates"}
+        )
+        if res.status_code not in (200, 201):
             raise HTTPException(status_code=400, detail=res.text)
         return {"message": "Rating submitted"}
+
 
 @router.get("/rating/{user_id}")
 async def get_rating(user_id: str):
