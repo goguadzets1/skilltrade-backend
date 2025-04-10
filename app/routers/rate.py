@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi import Request
 from app.core.supabase import supabase_client
 from app.models.models import Rating
 
