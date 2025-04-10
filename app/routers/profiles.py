@@ -20,6 +20,7 @@ async def get_profile(user_id: str):
 @router.put("/profile")
 async def update_profile(payload: ProfileUpdate):
     async with supabase_client() as client:
+        # First, update the profile (basic details)
         res = await client.post(
             "/profiles?on_conflict=id",
             json=payload.dict(),
@@ -27,7 +28,21 @@ async def update_profile(payload: ProfileUpdate):
         )
         if res.status_code not in (200, 201):
             raise HTTPException(status_code=400, detail=res.text)
-        return {"message": "Profile upserted"}
+
+        # Clear existing skills first
+        await client.delete("/profile_skills_have", params={"profile_id": payload.id})
+        await client.delete("/profile_skills_want", params={"profile_id": payload.id})
+
+        # Insert new skills into profile_skills_have
+        for skill_id in payload.skills_have:
+            await client.post("/profile_skills_have", json={"profile_id": payload.id, "skill_id": skill_id})
+
+        # Insert new skills into profile_skills_want
+        for skill_id in payload.skills_want:
+            await client.post("/profile_skills_want", json={"profile_id": payload.id, "skill_id": skill_id})
+
+        return {"message": "Profile upserted and skills updated"}
+
 
 
 
