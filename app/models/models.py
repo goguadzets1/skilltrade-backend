@@ -15,6 +15,8 @@ class ProfileUpdate(BaseModel):
     full_name: str
     bio: Optional[str]
     avatar_url: Optional[str]
+    skills_have: List[str]
+    skills_want: List[str]
 
 class MatchResult(BaseModel):
     id: str
