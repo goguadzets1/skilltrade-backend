@@ -7,13 +7,35 @@ from app.models.models import SkillCreate
 router = APIRouter()
 
 @router.get("/skills")
-async def get_skills():
+async def get_skills(user_id: str = None):
     async with supabase_client() as client:
-        res = await client.get("/skills")
+        # Always fetch all skills
+        res_all = await client.get("/skills")
         try:
-            return res.json()
+            all_skills = res_all.json()
         except Exception:
-            return JSONResponse(content={"error": "Failed to parse skills response"}, status_code=500)
+            return JSONResponse(content={"error": "Failed to parse skills"}, status_code=500)
+
+        # If no user_id, return just the full list
+        if not user_id:
+            return {"all": all_skills}
+
+        # Fetch user's skills_have and skills_want
+        res_have = await client.get("/profile_skills_have", params={"profile_id": f"eq.{user_id}"})
+        res_want = await client.get("/profile_skills_want", params={"profile_id": f"eq.{user_id}"})
+
+        try:
+            have = [entry["skill_id"] for entry in res_have.json()]
+            want = [entry["skill_id"] for entry in res_want.json()]
+        except Exception:
+            have, want = [], []
+
+        return {
+            "all": all_skills,
+            "skills_have": have,
+            "skills_want": want
+        }
+
 
 @router.post("/skills")
 async def add_skill(skill: SkillCreate):
