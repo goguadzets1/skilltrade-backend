@@ -6,7 +6,9 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://skilltrade-frontend-five.vercel.app"],
+    allow_origins=["https://skilltrade-frontend-five.vercel.app", 
+                    "http://localhost:3000" # dev mode
+                    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
