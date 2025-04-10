@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 from app.core.supabase import supabase_client
 from app.models.models import ProfileUpdate
 from app.utils.helpers import fetch_rating_for_user
@@ -22,3 +23,7 @@ async def update_profile(payload: ProfileUpdate):
         if res.status_code not in (200, 201):
             raise HTTPException(status_code=400, detail=res.text)
         return {"message": "Profile updated"}
+
+@router.options("/profile", include_in_schema=False)
+async def options_profile(request: Request):
+    return JSONResponse(content={}, status_code=200)

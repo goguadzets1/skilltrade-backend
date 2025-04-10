@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 from app.core.supabase import supabase_client
 from app.models.models import Rating
 
@@ -21,3 +22,7 @@ async def get_rating(user_id: str):
             return {"average": 0, "count": 0}
         stars = [r["stars"] for r in ratings]
         return {"average": sum(stars) / len(stars), "count": len(stars)}
+
+@router.options("/rate", include_in_schema=False)
+async def options_rate(request: Request):
+    return JSONResponse(content={}, status_code=200)
