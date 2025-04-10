@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from app.core.supabase import supabase_client
 from app.models.models import ProfileUpdate
+from app.utils.helpers import fetch_rating_for_user
 
 router = APIRouter()
 
@@ -8,8 +9,11 @@ router = APIRouter()
 async def get_profile(user_id: str):
     async with supabase_client() as client:
         profile = await client.get("/profiles", params={"select": "*", "id": f"eq.{user_id}"})
-        rating = await client.get(f"http://localhost:8000/rating/{user_id}")
-        return {**profile.json()[0], "rating": rating.json()}
+        data = profile.json()
+        if not data:
+            return {}
+        rating = await fetch_rating_for_user(user_id)
+        return {**data[0], "rating": rating}
 
 @router.put("/profile")
 async def update_profile(payload: ProfileUpdate):
