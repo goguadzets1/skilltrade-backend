@@ -1,6 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
-from fastapi import Request
 from app.core.supabase import supabase_client
 from app.models.models import RatingCreate
 
@@ -22,22 +21,39 @@ async def submit_rating(payload: RatingCreate):
 @router.get("/rating/{user_id}")
 async def get_rating(user_id: str):
     async with supabase_client() as client:
+        # Fetch profile
+        profile_res = await client.get("/profiles", params={"id": f"eq.{user_id}"})
+        profile_data = profile_res.json()[0] if profile_res.status_code == 200 and profile_res.json() else {}
 
-        res = await client.post("/rpc/get_user_ratings_with_email", json={"user_id": user_id})
-        if res.status_code != 200:
-            raise HTTPException(status_code=500, detail="Failed to fetch ratings")
+        # Fetch skills_have
+        have_res = await client.get("/profile_skills_have", params={"profile_id": f"eq.{user_id}"})
+        want_res = await client.get("/profile_skills_want", params={"profile_id": f"eq.{user_id}"})
+        profile_data["skills_have"] = [row["skill_id"] for row in have_res.json()] if have_res.status_code == 200 else []
+        profile_data["skills_want"] = [row["skill_id"] for row in want_res.json()] if want_res.status_code == 200 else []
 
-        ratings = res.json()
-        if not ratings:
-            return {"average": 0, "count": 0, "entries": []}
+        # Fetch all skills (for frontend dropdown matching)
+        skills_res = await client.get("/skills")
+        skills = skills_res.json() if skills_res.status_code == 200 else []
 
+        # Fetch ratings via RPC
+        rpc_res = await client.post("/rpc/get_user_ratings_with_email", json={"user_id": user_id})
+        if rpc_res.status_code != 200:
+            raise HTTPException(status_code=rpc_res.status_code, detail="Failed to fetch ratings")
+
+        ratings = rpc_res.json()
         stars = [r["stars"] for r in ratings]
+        average = round(sum(stars) / len(stars), 2) if stars else 0
+
         return {
-            "average": round(sum(stars) / len(stars), 2),
-            "count": len(stars),
-            "entries": ratings  # full list for frontend
+            **profile_data,
+            "skills": skills,  # 👈 Add full skill list
+            "average": average,
+            "count": len(ratings),
+            "entries": ratings
         }
 
-@router.options("/rate", include_in_schema=False)
+
+
+@router.options("/rating", include_in_schema=False)
 async def options_rate(request: Request):
     return JSONResponse(content={}, status_code=200)

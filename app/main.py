@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import skills, rate, match, profiles
+from app.routers import skills, rate, match, profiles, chat
 
 app = FastAPI()
 
@@ -19,3 +19,4 @@ app.include_router(skills.router)
 app.include_router(rate.router)
 app.include_router(match.router)
 app.include_router(profiles.router)
+app.include_router(chat.router)
