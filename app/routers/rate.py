@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi import Request
 from app.core.supabase import supabase_client
-from app.models.models import Rating
 from app.models.models import RatingCreate
 
 router = APIRouter()
@@ -23,12 +22,23 @@ async def submit_rating(payload: RatingCreate):
 @router.get("/rating/{user_id}")
 async def get_rating(user_id: str):
     async with supabase_client() as client:
-        res = await client.get("/ratings", params={"select": "stars", "to_user": f"eq.{user_id}"})
+        query = (
+            "rpc:get_user_ratings_with_email" 
+        )
+        res = await client.get(f"/{query}", params={"user_id": user_id})
+        if res.status_code != 200:
+            raise HTTPException(status_code=500, detail="Failed to fetch ratings")
+
         ratings = res.json()
         if not ratings:
-            return {"average": 0, "count": 0}
+            return {"average": 0, "count": 0, "entries": []}
+
         stars = [r["stars"] for r in ratings]
-        return {"average": sum(stars) / len(stars), "count": len(stars)}
+        return {
+            "average": round(sum(stars) / len(stars), 2),
+            "count": len(stars),
+            "entries": ratings  # full list for frontend
+        }
 
 @router.options("/rate", include_in_schema=False)
 async def options_rate(request: Request):
