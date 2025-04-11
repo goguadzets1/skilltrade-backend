@@ -22,10 +22,8 @@ async def submit_rating(payload: RatingCreate):
 @router.get("/rating/{user_id}")
 async def get_rating(user_id: str):
     async with supabase_client() as client:
-        query = (
-            "rpc:get_user_ratings_with_email" 
-        )
-        res = await client.get(f"/{query}", params={"user_id": user_id})
+
+        res = await client.post("/rpc/get_user_ratings_with_email", json={"user_id": user_id})
         if res.status_code != 200:
             raise HTTPException(status_code=500, detail="Failed to fetch ratings")
 
