@@ -13,12 +13,32 @@ router = APIRouter()
 @router.get("/profile/{user_id}")
 async def get_profile(user_id: str):
     async with supabase_client() as client:
-        profile = await client.get("/profiles", params={"select": "*", "id": f"eq.{user_id}"})
-        data = profile.json()
+        # Fetch profile
+        profile_res = await client.get("/profiles", params={"select": "*", "id": f"eq.{user_id}"})
+        data = profile_res.json()
         if not data:
             return {}
+
+        user_profile = data[0]
+        avatar_url = user_profile.get("avatar_url") or DEFAULT_AVATAR_URL
+
         rating = await fetch_rating_for_user(user_id)
-        return {**data[0], "rating": rating}
+
+        have_res = await client.get("/profile_skills_have", params={"profile_id": f"eq.{user_id}"})
+        skills_have = [entry["skill_id"] for entry in have_res.json()]
+
+        want_res = await client.get("/profile_skills_want", params={"profile_id": f"eq.{user_id}"})
+        skills_want = [entry["skill_id"] for entry in want_res.json()]
+
+        return {
+            **user_profile,
+            "avatar_url": avatar_url,
+            "skills_have": skills_have,
+            "skills_want": skills_want,
+            "rating": rating
+        }
+
+
 
 @router.put("/profile")
 async def update_profile(payload: ProfileUpdate):
@@ -29,7 +49,7 @@ async def update_profile(payload: ProfileUpdate):
         skills_have = profile_data.pop("skills_have", [])
         skills_want = profile_data.pop("skills_want", [])
 
-        if not profile_data.get("avatar_url"):
+        if profile_data.get("avatar_url") == "":
             profile_data["avatar_url"] = DEFAULT_AVATAR_URL
 
         # Upsert profile (only valid columns)
